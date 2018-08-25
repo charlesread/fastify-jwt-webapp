@@ -3,14 +3,14 @@
 const URL = require('url').URL
 const qs = require('querystring')
 
-const log = require('~/lib/logger.js')()
-
 const deepExtend = require('deep-extend')
 const jwksClient = require('jwks-rsa')
 const jsonwebtoken = require('jsonwebtoken')
 
 const fp = require('fastify-plugin')
 const request = require('request')
+
+let log
 
 const defaultOptions = {
   scope: 'openid',
@@ -80,6 +80,8 @@ const functionGetJWT = function (_authorizationCode, _opts) {
 }
 
 const implementation = function (fastify, options, next) {
+
+  log = fastify.log
 
   try {
 
