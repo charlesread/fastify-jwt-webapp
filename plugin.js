@@ -2,6 +2,7 @@
 
 const URL = require('url').URL
 const qs = require('querystring')
+
 const deepExtend = require('deep-extend')
 const jwksClient = require('jwks-rsa')
 const jsonwebtoken = require('jsonwebtoken')
@@ -15,6 +16,12 @@ const defaultOptions = {
   pathCallback: '/callback',
   pathExempt: ['/login', '/callback'],
   cookie: {
+    domain: 'localhost',
+    path: '*',
+    // add JWT expiration to current time
+    expires: ((Math.floor((Date.now()) / 1000)) + 86400) * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
     name: 'token',
     secure: true
   },
@@ -23,6 +30,15 @@ const defaultOptions = {
 }
 
 let opts
+let client
+
+const getKey = function (header, callback) {
+  client.getSigningKey(header.kid, function (err, key) {
+    if (err) return callback(err, null)
+    const signingKey = key.publicKey || key.rsaPublicKey;
+    callback(null, signingKey)
+  })
+}
 
 const generateAuthorizationUrl = function (_opts) {
   const authorizationUrl = new URL(_opts.urlLogin)
@@ -66,6 +82,10 @@ const implementation = function (fastify, options, next) {
     // merge parameter options with default options
     opts = deepExtend({}, defaultOptions, options)
 
+    client = jwksClient({
+      jwksUri: opts.urlJWKS
+    })
+
     // register cookie plugin so that we can persist the JWT from request to request
     fastify.register(require('fastify-cookie'), function (err) {
       if (err) return next(new Error(`there was an error registering fastify-cookie: ${err.message}`))
@@ -82,44 +102,33 @@ const implementation = function (fastify, options, next) {
     fastify.get(opts.pathCallback, async function (req, reply) {
       const jwtResponse = await functionGetJWT(req.query.code, opts)
       return reply
-        .setCookie(opts.cookie.name, jwtResponse.id_token, {
-          domain: 'localhost',
-          path: '*',
-          // add JWT expiration to current time
-          expires: ((Math.floor((Date.now()) / 1000)) + parseInt(jwtResponse.expires_in)) * 1000,
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: opts.cookie.secure
-        })
+        .setCookie(opts.cookie.name, jwtResponse.id_token, opts.cookie)
         .redirect(opts.pathSuccessRedirect)
     })
 
-    fastify.decorateRequest(opts.nameCredentialsDecorator, {})
+    fastify.decorateRequest(opts.nameCredentialsDecorator, undefined)
 
     fastify.addHook('preHandler', function (req, reply, next) {
       try {
         const originalUrl = (new URL(`http://dummy.com${req.raw.originalUrl}`)).pathname
         // let the request through if it's exempt
-        if (opts.pathExempt.includes(originalUrl)) return next()
+        // if (opts.pathExempt.includes(originalUrl)) return next()
         const token = req.cookies[opts.cookie.name]
-        const client = jwksClient({
-          jwksUri: opts.urlJWKS
-        })
-        const getKey = function (header, callback) {
-          client.getSigningKey(header.kid, function (err, key) {
-            if (err) return callback(err, null)
-            const signingKey = key.publicKey || key.rsaPublicKey;
-            callback(null, signingKey)
-          })
-        }
         if (token) {
           jsonwebtoken.verify(token, getKey, function (err, decodedToken) {
-            if (err) return reply.redirect(generateAuthorizationUrl(opts))
+            if (err) {
+              if (!opts.pathExempt.includes(originalUrl)) {
+                return reply.redirect(generateAuthorizationUrl(opts))
+              }
+              next()
+            }
             req[opts.nameCredentialsDecorator] = decodedToken
             next()
           })
         } else {
-          reply.redirect(generateAuthorizationUrl(opts))
+          if (!opts.pathExempt.includes(originalUrl)) {
+            return reply.redirect(generateAuthorizationUrl(opts))
+          }
           next()
         }
       } catch (e) {
