@@ -1,7 +1,7 @@
 {
   "name": "fastify-jwt-webapp",
   "version": "0.0.1",
-  "description": "",
+  "description": "JWT for fastify webapps",
   "main": "plugin.js",
   "directories": {
     "example": "examples"
@@ -9,7 +9,17 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Charles Read <charles@charlesread.io>",
+  "repository": "https://github.com/charlesread/fastify-jwt-webapp",
+  "bugs": "https://github.com/charlesread/fastify-jwt-webapp/issues",
+  "keywords": [
+    "fastify",
+    "auth0",
+    "jwt",
+    "authentication",
+    "auth",
+    "sso"
+  ],
   "license": "ISC",
   "dependencies": {
     "deep-extend": "^0.6.0",

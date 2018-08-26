@@ -108,6 +108,13 @@ const implementation = function (fastify, options, next) {
     fastify.get(opts.pathCallback, async function (req, reply) {
       log.trace(`callback endpoint requested, code: ${req.query.code}`)
       const jwtResponse = await functionGetJWT(req.query.code, opts)
+      if (opts.authorizationCallback) {
+        try {
+          await opts.authorizationCallback(jwtResponse, req, reply)
+        } catch (err) {
+          fastify.log.warn(err.message)
+        }
+      }
       return reply
         .setCookie(opts.cookie.name, jwtResponse.id_token, opts.cookie)
         .redirect(opts.pathSuccessRedirect)
