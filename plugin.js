@@ -45,11 +45,18 @@ const getKey = function (header, callback) {
 const generateAuthorizationUrl = function (_opts) {
   const authorizationUrl = new URL(_opts.urlLogin)
   authorizationUrl.search = qs.stringify({
-    response_type: 'code',
     client_id: _opts.client_id,
+    response_type: 'code',
     redirect_uri: _opts.redirect_uri,
-    nonce: Date.now(),
-    scope: _opts.scope
+    response_mode: 'query'
+    // response_type: 'id_token',
+    // response_mode: 'form_post',
+    // // response_type: 'code',
+    // client_id: _opts.client_id,
+    // redirect_uri: _opts.redirect_uri,
+    // nonce: Date.now(),
+    // state: Date.now(),
+    // scope: _opts.scope
   })
   return authorizationUrl.toString()
 }
@@ -60,14 +67,31 @@ const functionGetJWT = function (_authorizationCode, _opts) {
     request({
       method: 'POST',
       uri: _opts.urlAuthorizationCode,
-      json: true,
-      body: {
+      // json: true,
+      // querystring: {
+      //   grant_type: 'authorization_code',
+      //   client_id: _opts.client_id,
+      //   client_secret: _opts.client_secret,
+      //   code: _authorizationCode,
+      //   redirect_uri: _opts.redirect_uri,
+      //   response_mode: 'id_token token'
+      // },
+      // body: {
+      //   grant_type: 'authorization_code',
+      //   client_id: _opts.client_id,
+      //   client_secret: _opts.client_secret,
+      //   code: _authorizationCode,
+      //   redirect_uri: _opts.redirect_uri,
+      //   response_mode: 'id_token token'
+      // },
+      form: {
         grant_type: 'authorization_code',
         client_id: _opts.client_id,
         client_secret: _opts.client_secret,
         code: _authorizationCode,
         redirect_uri: _opts.redirect_uri,
-        response_mode: 'id_token token'
+        response_mode: 'id_token token',
+        resource: '9234c699-c34c-4025-972f-0025d8f21641'
       }
     }, function (err, response, body) {
       if (err) {
@@ -108,6 +132,7 @@ const implementation = function (fastify, options, next) {
     fastify.get(opts.pathCallback, async function (req, reply) {
       log.trace(`callback endpoint requested, code: ${req.query.code}`)
       const jwtResponse = await functionGetJWT(req.query.code, opts)
+      fastify.log.debug('jwtResponse: %o', jwtResponse)
       if (opts.authorizationCallback) {
         try {
           await opts.authorizationCallback(jwtResponse, req, reply)
