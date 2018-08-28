@@ -13,10 +13,19 @@ const request = require('request')
 let log
 
 const defaultOptions = {
-  scope: 'openid',
+  // overall
+  client_id: '',
+  client_secret: '',
+  urlLogin: '',
+  urlJWKS: '',
+  redirect_uri: '',
+  // configurations
   pathLogin: '/login',
   pathCallback: '/callback',
   pathExempt: ['/login', '/callback'],
+  pathSuccessRedirect: '/',
+  nameCredentialsDecorator: 'credentials',
+  // used as the direct options to fastify-cookie
   cookie: {
     domain: 'localhost',
     path: '/',
@@ -27,11 +36,21 @@ const defaultOptions = {
     name: 'token',
     secure: true
   },
-  nameCredentialsDecorator: 'credentials',
-  pathSuccessRedirect: '/'
+  // used in building the URL to the auth service
+  authorization: {
+    response_type: 'code',
+    response_mode: 'query',
+    scope: 'openid'
+  },
+  // used to request token from auth service from authorization code
+  token: {
+    response_mode: 'token id_token',
+    grant_type: 'authorization_code',
+    resource: '9234c699-c34c-4025-972f-0025d8f21641'
+  }
 }
 
-let opts
+let derivedOptions
 let client
 
 const getKey = function (header, callback) {
@@ -43,26 +62,21 @@ const getKey = function (header, callback) {
 }
 
 const generateAuthorizationUrl = function (_opts) {
-  const authorizationUrl = new URL(_opts.urlLogin)
+  const derivedOptions = deepExtend({}, defaultOptions.authorization, _opts)
+  const authorizationUrl = new URL(derivedOptions.urlLogin)
   authorizationUrl.search = qs.stringify({
-    client_id: _opts.client_id,
-    response_type: 'code',
-    redirect_uri: _opts.redirect_uri,
-    response_mode: 'query'
-    // response_type: 'id_token',
-    // response_mode: 'form_post',
-    // // response_type: 'code',
-    // client_id: _opts.client_id,
-    // redirect_uri: _opts.redirect_uri,
-    // nonce: Date.now(),
-    // state: Date.now(),
-    // scope: _opts.scope
+    client_id: derivedOptions.client_id,
+    response_type: derivedOptions.authorization.response_type,
+    redirect_uri: derivedOptions.redirect_uri,
+    response_mode: derivedOptions.response_mode
   })
   return authorizationUrl.toString()
 }
 
 const functionGetJWT = function (_authorizationCode, _opts) {
   log.trace('functionGetJWT was invoked')
+  const derivedOptions = deepExtend({}, defaultOptions.token, _opts)
+  derivedOptions.code = _authorizationCode
   return new Promise(function (resolve, reject) {
     request({
       method: 'POST',
@@ -85,19 +99,23 @@ const functionGetJWT = function (_authorizationCode, _opts) {
       //   response_mode: 'id_token token'
       // },
       form: {
-        grant_type: 'authorization_code',
-        client_id: _opts.client_id,
-        client_secret: _opts.client_secret,
+        grant_type: derivedOptions.grant_type,
+        client_id: derivedOptions.client_id,
+        client_secret: derivedOptions.client_secret,
         code: _authorizationCode,
-        redirect_uri: _opts.redirect_uri,
-        response_mode: 'id_token token',
-        resource: '9234c699-c34c-4025-972f-0025d8f21641'
+        redirect_uri: derivedOptions.redirect_uri,
+        response_mode: derivedOptions.response_mode,
+        resource: derivedOptions.resource
       }
     }, function (err, response, body) {
       if (err) {
         return reject(err)
       }
       log.trace('functionGetJWT was successful, body: %j', body)
+      try {
+        body = JSON.parse(body)
+      } catch (e) {
+      }
       return resolve(body)
     })
   })
@@ -110,10 +128,10 @@ const implementation = function (fastify, options, next) {
   try {
 
     // merge parameter options with default options
-    opts = deepExtend({}, defaultOptions, options)
+    derivedOptions = deepExtend({}, defaultOptions, options)
 
     client = jwksClient({
-      jwksUri: opts.urlJWKS
+      jwksUri: derivedOptions.urlJWKS
     })
 
     // register cookie plugin so that we can persist the JWT from request to request
@@ -122,30 +140,32 @@ const implementation = function (fastify, options, next) {
     })
 
     // endpoint for logging in
-    fastify.get(opts.pathLogin, async function (req, reply) {
+    fastify.get(derivedOptions.pathLogin, async function (req, reply) {
       // redirect to authentication provider (like Auth0)
-      return reply.redirect(generateAuthorizationUrl(opts))
+      return reply.redirect(generateAuthorizationUrl(derivedOptions))
     })
 
     // callback endpoint that will be redirected to once successfully authenticated with the authentication provider
     // this endpoint will convert the authorization code to a JWT and set a cookie with the JWT
-    fastify.get(opts.pathCallback, async function (req, reply) {
+    fastify.get(derivedOptions.pathCallback, async function (req, reply) {
       log.trace(`callback endpoint requested, code: ${req.query.code}`)
-      const jwtResponse = await functionGetJWT(req.query.code, opts)
+      const jwtResponse = await functionGetJWT(req.query.code, derivedOptions)
       fastify.log.debug('jwtResponse: %o', jwtResponse)
-      if (opts.authorizationCallback) {
+      const token = jwtResponse.id_token
+      fastify.log.debug(`token: ${token}`)
+      if (derivedOptions.authorizationCallback) {
         try {
-          await opts.authorizationCallback(jwtResponse, req, reply)
+          await derivedOptions.authorizationCallback(jwtResponse, req, reply)
         } catch (err) {
           fastify.log.warn(err.message)
         }
       }
       return reply
-        .setCookie(opts.cookie.name, jwtResponse.id_token, opts.cookie)
-        .redirect(opts.pathSuccessRedirect)
+        .setCookie(derivedOptions.cookie.name, token, derivedOptions.cookie)
+        .redirect(derivedOptions.pathSuccessRedirect)
     })
 
-    fastify.decorateRequest(opts.nameCredentialsDecorator, undefined)
+    fastify.decorateRequest(derivedOptions.nameCredentialsDecorator, undefined)
 
     fastify.addHook('preHandler', function (req, reply, next) {
       try {
@@ -153,29 +173,28 @@ const implementation = function (fastify, options, next) {
         const originalUrl = (new URL(`http://dummy.com${req.raw.originalUrl}`)).pathname
         log.trace(`originalUrl: ${originalUrl}`)
         // let the request through if it's exempt
-        // if (opts.pathExempt.includes(originalUrl)) return next()
-        const token = req.cookies[opts.cookie.name]
+        const token = req.cookies[derivedOptions.cookie.name]
         if (token) {
-          log.trace('a token exists')
+          log.trace(`a token exists: ${token}`)
           jsonwebtoken.verify(token, getKey, function (err, decodedToken) {
             if (err) {
               log.trace('token verification was not successful: %j', err.message)
-              if (!opts.pathExempt.includes(originalUrl)) {
-                log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${opts.urlLogin}`)
-                return reply.redirect(generateAuthorizationUrl(opts))
+              if (!derivedOptions.pathExempt.includes(originalUrl)) {
+                log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${derivedOptions.urlLogin}`)
+                return reply.redirect(generateAuthorizationUrl(derivedOptions))
               }
               log.trace(`pathExempt DOES include ${originalUrl}`)
               return next()
             }
             log.trace('verification was successful, decodedToken: %j', decodedToken)
-            req[opts.nameCredentialsDecorator] = decodedToken
+            req[derivedOptions.nameCredentialsDecorator] = decodedToken
             return next()
           })
         } else {
           log.trace('a token does not exist')
-          if (!opts.pathExempt.includes(originalUrl)) {
-            log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${opts.urlLogin}`)
-            return reply.redirect(generateAuthorizationUrl(opts))
+          if (!derivedOptions.pathExempt.includes(originalUrl)) {
+            log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${derivedOptions.urlLogin}`)
+            return reply.redirect(generateAuthorizationUrl(derivedOptions))
           }
           log.trace(`pathExempt DOES include ${originalUrl}`)
           return next()
