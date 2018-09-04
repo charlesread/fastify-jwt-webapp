@@ -62,21 +62,18 @@ const getKey = function (header, callback) {
 }
 
 const generateAuthorizationUrl = function (_opts) {
-  const derivedOptions = deepExtend({}, defaultOptions.authorization, _opts)
   const authorizationUrl = new URL(derivedOptions.urlLogin)
   authorizationUrl.search = qs.stringify({
     client_id: derivedOptions.client_id,
     response_type: derivedOptions.authorization.response_type,
     redirect_uri: derivedOptions.redirect_uri,
-    response_mode: derivedOptions.response_mode
+    response_mode: derivedOptions.authorization.response_mode
   })
   return authorizationUrl.toString()
 }
 
 const functionGetJWT = function (_authorizationCode, _opts) {
   log.trace('functionGetJWT was invoked')
-  const derivedOptions = deepExtend({}, defaultOptions.token, _opts)
-  derivedOptions.code = _authorizationCode
   return new Promise(function (resolve, reject) {
     request({
       method: 'POST',
@@ -99,13 +96,13 @@ const functionGetJWT = function (_authorizationCode, _opts) {
       //   response_mode: 'id_token token'
       // },
       form: {
-        grant_type: derivedOptions.grant_type,
+        grant_type: derivedOptions.token.grant_type,
         client_id: derivedOptions.client_id,
         client_secret: derivedOptions.client_secret,
         code: _authorizationCode,
         redirect_uri: derivedOptions.redirect_uri,
-        response_mode: derivedOptions.response_mode,
-        resource: derivedOptions.resource
+        response_mode: derivedOptions.token.response_mode,
+        resource: derivedOptions.token.resource
       }
     }, function (err, response, body) {
       if (err) {
