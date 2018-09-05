@@ -1,21 +1,20 @@
-
 # fastify-jwt-webapp  
   
 *fastify-jwt-webapp* brings the security and simplicity of JSON Web Tokens to your [Fastify][fastify]-based web apps.  This plugin assumes does not assume your knowledge of JWTs themselves, but knowledge of the workflows involved, particularly as it relates to *your* provider, are assumed.  
   
 To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charlesread.io).  
   
-[fastify]: https://fastify.io/  
-  
-<!-- toc -->  
-  
-- [Example](#example)  
-  * [index.js](#indexjs)  
-  * [config.js](#configjs)  
-- [Cookie](#cookie)  
-  
-<!-- tocstop -->  
-  
+[fastify]: https://fastify.io/
+
+<!-- toc -->
+
+- [Example](#example)
+- [Cookie](#cookie)
+- [Refresh Tokens](#refresh-tokens)
+- [Options](#options)
+
+<!-- tocstop -->
+
 ## Example  
 ```bash  
 npm install --save fastify-jwt-webapp```  
