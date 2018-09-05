@@ -1,8 +1,8 @@
 # fastify-jwt-webapp  
   
-*fastify-jwt-webapp* brings the security and simplicity of JSON Web Tokens to your [fastify][fastify]-based web apps, single- and multi-paged "traditional" applications are the target of this plugin, although it does not impose a server-side session to accomplish being "logged-in" from request to request.  Rather, a JWT is simply stored in a client-side cookie and retrieved and verified with each request after successful login. This plugin does not assume your knowledge of JWTs themselves, but knowledge of the workflows involved, particularly as it relates to *your* provider, are assumed. (this plugin uses a `/authorize -> authorization_code -> /oauth/token -> JWT`-like workflow) 
+_fastify-jwt-webapp_ brings the security and simplicity of JSON Web Tokens to your [fastify][fastify]-based web apps, single- and multi-paged "traditional" applications are the target of this plugin, although it does not impose a server-side session to accomplish being "logged-in" from request to request.  Rather, a JWT is simply stored in a client-side cookie and retrieved and verified with each request after successful login. This plugin does not assume your knowledge of JWTs themselves, but knowledge of the workflows involved, particularly as it relates to *your* provider, are assumed. (this plugin uses a `/authorize -> authorization_code -> /oauth/token -> JWT`-like workflow) 
   
-To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charlesread.io).  
+To see _fastify-jwt-webapp_ in the wild check out [my website](https://www.charlesread.io).  
   
 [fastify]: https://fastify.io/
 
@@ -102,7 +102,7 @@ module.exports = config
   
 ## Cookie  
   
-Being "logged-in" is achieved by passing along the JWT along with each request, as is typical with APIs (via the `Authorization` header). *fastify-jwt-webapp* does this by storing the JWT in a cookie (`options.cookie.name`, "token" by default).  By default this cookie is `Secure`, meaning that it will only be sent by the browser back to your app if the connection is secure.  To change this behavior set `options.cookie.secure` to `false`.  DO NOT DO THIS IN PRODUCTION.  YOU HAVE BEEN WARNED.  To see cookie options please see `lib/config.js`.
+Being "logged-in" is achieved by passing along the JWT along with each request, as is typical with APIs (via the `Authorization` header). _fastify-jwt-webapp_ does this by storing the JWT in a cookie (`options.cookie.name`, "token" by default).  By default this cookie is `Secure`, meaning that it will only be sent by the browser back to your app if the connection is secure.  To change this behavior set `options.cookie.secure` to `false`.  DO NOT DO THIS IN PRODUCTION.  YOU HAVE BEEN WARNED.  To see cookie options please see `lib/config.js`.
   
 ## Refresh Tokens  
   
@@ -112,15 +112,16 @@ This plugin does not treat refresh tokens, but there's no reason that you couldn
   
 | Key |   | Default | Description |
 | --- | --- | --- | --- |
-| service | _required_  | `auth0` | This plugin makes use of "templates" that control the parameters that are sent to the IdP.  Can be `auth0` or `o365` right now. |
-| client_id | _required_ |  | Your client ID. |
-| client_secret | _required_ |  | You client secret. |
-| urlAuthorize | _required_ |  | The URL that your IdP uses for login, `https://yourinstance.auth0.com/authorize`, for example. |
-| urlToken | _required_ |  | The URL that your IdP uses for exchanging an `authorization_code` for access token(s), in this case a JWT, `https://yourinstance.auth0.com/oauth/token`, for example. |
-| urlJWKS | _required_ |  | The URL that serves your JWKS, `https://yourinstance.auth0.com/.well-known/jwks.json`, for example. |
-| redirect_uri | _required_ |  | This is the URL to which an IdP should redirect in order to process the successful authentication, `https://myapp.example.com/callback`, for example. |
-| pathCallback |  | `/callback` | `fastify-jwt-webapp` creates several endpoints in your application, this is one of them, it processes the stuff that your IdP sends over after successful authentication, by default the endpoint is `/callback`, but you can change that with this parameter.  This is very related to the `redirect_uri` option mentioned above. |
-| pathLogin |  | `/login` | This is the second endpoint that `fastify-jwt-webapp` adds, it redirects to `urlAuthorize` (with some other stuff along the way), it's `/login` by default, but you can change it to anything, it's just aesthetic. |
-| pathSuccessRedirect |  | `/` | Where do you get redirected after successful authentication?  `pathSuccessRedirect`, that's where. |
-| pathExempt |   | `['/login', '/callback']` | An array of endpoint paths to be excluded from the actions of the plugin (unauthenticated routes). |
-| nameCredentialsDecorator |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
+| `service` | _required_  | `auth0` | This plugin makes use of "templates" that control the parameters that are sent to the IdP.  Can be `auth0` or `o365` right now. |
+| `client_id` | _required_ |  | Your client ID. |
+| `client_secret` | _required_ |  | You client secret. |
+| `urlAuthorize` | _required_ |  | The URL that your IdP uses for login, `https://yourinstance.auth0.com/authorize`, for example. |
+| `urlToken` | _required_ |  | The URL that your IdP uses for exchanging an `authorization_code` for access token(s), in this case a JWT, `https://yourinstance.auth0.com/oauth/token`, for example. |
+| `urlJWKS` | _required_ |  | The URL that serves your JWKS, `https://yourinstance.auth0.com/.well-known/jwks.json`, for example. |
+| `cookie.domain` | _required_ | `os.hostname()` | _fastify-jwt-webapp_ works by setting a cookie, so you need to specify the domain for which the cookie will be sent. |
+| `redirect_uri` | _required_ |  | This is the URL to which an IdP should redirect in order to process the successful authentication, `https://myapp.example.com/callback`, for example. |
+| `pathCallback` |  | `/callback` | _fastify-jwt-webapp_ creates several endpoints in your application, this is one of them, it processes the stuff that your IdP sends over after successful authentication, by default the endpoint is `/callback`, but you can change that with this parameter.  This is very related to the `redirect_uri` option mentioned above. |
+| `pathLogin` |  | `/login` | This is the second endpoint that _fastify-jwt-webapp_ adds, it redirects to `urlAuthorize` (with some other stuff along the way), it's `/login` by default, but you can change it to anything, it's just aesthetic. |
+| `pathSuccessRedirect` |  | `/` | Where do you get redirected after successful authentication?  `pathSuccessRedirect`, that's where. |
+| `pathExempt` |   | `['/login', '/callback']` | An array of endpoint paths to be excluded from the actions of the plugin (unauthenticated routes). |
+| `nameCredentialsDecorator` |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
