@@ -1,6 +1,6 @@
 # fastify-jwt-webapp  
   
-*fastify-jwt-webapp* brings the security and simplicity of JSON Web Tokens to your [fastify][fastify]-based web apps.  This plugin assumes does not assume your knowledge of JWTs themselves, but knowledge of the workflows involved, particularly as it relates to *your* provider, are assumed.  
+*fastify-jwt-webapp* brings the security and simplicity of JSON Web Tokens to your [fastify][fastify]-based web apps, single- and multi-paged "traditional" applications are the target of this plugin, although it does not impose a server-side session to accomplish being "logged-in" from request to request.  Rather, a JWT is simply stored in a client-side cookie and retrieved and verified with each request after successful login. This plugin does not assume your knowledge of JWTs themselves, but knowledge of the workflows involved, particularly as it relates to *your* provider, are assumed. (this plugin uses a `/authorize -> authorization_code -> /oauth/token -> JWT`-like workflow) 
   
 To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charlesread.io).  
   
