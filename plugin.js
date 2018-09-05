@@ -125,7 +125,7 @@ const implementation = function (fastify, options, next) {
             if (err) {
               log.trace('token verification was not successful: %j', err.message)
               if (!_config.pathExempt.includes(originalUrl)) {
-                log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlLogin}`)
+                log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
                 return reply.redirect(_config.pathLogin)
               }
               log.trace(`pathExempt DOES include ${originalUrl}`)
@@ -138,7 +138,7 @@ const implementation = function (fastify, options, next) {
         } else {
           log.trace('a token does not exist')
           if (!_config.pathExempt.includes(originalUrl)) {
-            log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlLogin}`)
+            log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
             return reply.redirect(_config.pathLogin)
           }
           log.trace(`pathExempt DOES include ${originalUrl}`)

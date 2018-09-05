@@ -4,8 +4,8 @@ const config = {}
 
 config.fjwt = {
   service: 'auth0',
-  urlLogin: 'https://instance.auth0.com/authorize',
-  urlAuthorizationCode: 'https://instance.auth0.com/oauth/token',
+  urlAuthorize: 'https://instance.auth0.com/authorize',
+  urlToken: 'https://instance.auth0.com/oauth/token',
   urlJWKS: 'https://instance.auth0.com/.well-known/jwks.json',
   client_id: '',
   client_secret: '',

@@ -77,8 +77,8 @@ const config = {}
 
 config.fjwt = {
   service: 'auth0',
-  urlLogin: 'https://instance.auth0.com/authorize',
-  urlAuthorizationCode: 'https://instance.auth0.com/oauth/token',
+  urlAuthorize: 'https://instance.auth0.com/authorize',
+  urlToken: 'https://instance.auth0.com/oauth/token',
   urlJWKS: 'https://instance.auth0.com/.well-known/jwks.json',
   client_id: '',
   client_secret: '',
@@ -112,14 +112,14 @@ This plugin does not treat refresh tokens, but there's no reason that you couldn
   
 | Key |   | Default | Description |
 | --- | --- | --- | --- |
-| service | _required_  |  | This plugin makes use of "templates" that control the parameters that are sent to the IdP.  Can be `auth0` or `o365` right now. |
+| service | _required_  | `auth0` | This plugin makes use of "templates" that control the parameters that are sent to the IdP.  Can be `auth0` or `o365` right now. |
 | client_id | _required_ |  | Your client ID. |
 | client_secret | _required_ |  | You client secret. |
-| urlLogin | _required_ |  | The URL that your IdP uses for login, `https://yourinstance.auth0.com/authorize`, for example. |
+| urlAuthorize | _required_ |  | The URL that your IdP uses for login, `https://yourinstance.auth0.com/authorize`, for example. |
 | urlJWKS | _required_ |  | The URL that serves your JWKS, `https://yourinstance.auth0.com/.well-known/jwks.json`, for example. |
 | redirect_uri | _required_ |  | This is the URL to which an IdP should redirect in order to process the successful authentication, `https://myapp.example.com/callback`, for example. |
 | pathCallback |  | `/callback` | `fastify-jwt-webapp` creates several endpoints in your application, this is one of them, it processes the stuff that your IdP sends over after successful authentication, by default the endpoint is `/callback`, but you can change that with this parameter.  This is very related to the `redirect_uri` option mentioned above. |
-| pathLogin |  | `/login` | This is the second endpoint that `fastify-jwt-webapp` adds, it redirects to `urlLogin` (with some other stuff along the way), it's `/login` by default, but you can change it to anything, it's just aesthetic. |
+| pathLogin |  | `/login` | This is the second endpoint that `fastify-jwt-webapp` adds, it redirects to `urlAuthorize` (with some other stuff along the way), it's `/login` by default, but you can change it to anything, it's just aesthetic. |
 | pathSuccessRedirect |  | `/` | Where do you get redirected after successful authentication?  `pathSuccessRedirect`, that's where. |
 | pathExempt |   | `['/login', '/callback']` | An array of endpoint paths to be excluded from the actions of the plugin (unauthenticated routes). |
 | nameCredentialsDecorator |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
