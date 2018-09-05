@@ -1,0 +1,26 @@
+'use strict'
+
+const config = {}
+
+config.fjwt = {
+  service: 'auth0',
+  urlLogin: 'https://instance.auth0.com/authorize',
+  urlAuthorizationCode: 'https://instance.auth0.com/oauth/token',
+  urlJWKS: 'https://instance.auth0.com/.well-known/jwks.json',
+  client_id: '',
+  client_secret: '',
+  redirect_uri: 'https://localhost:8443/callback',
+  // the following is optional
+  pathSuccessRedirect: '/credentials', // '/' by default
+  pathExempt: [
+    '/',
+    '/login',
+    '/callback'
+  ], // ['/login', '/callback'] by default
+  authorizationCallback: async function (jwtResponse, req, reply) {
+    req.log.info('hello from authorizationCallback!')
+    req.log.info('jwtResponse: %o', jwtResponse)
+  }
+}
+
+module.exports = config

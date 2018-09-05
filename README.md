@@ -9,6 +9,8 @@ To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charl
 <!-- toc -->
 
 - [Example](#example)
+  * [index.js](#indexjs)
+  * [config.js](#configjs)
 - [Cookie](#cookie)
 
 <!-- tocstop -->
@@ -17,31 +19,79 @@ To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charl
 ```bash
 npm install --save fastify-jwt-webapp
 ```
+### index.js
 ```javascript
-'use strict'  
-  
-const fastify = require('fastify')()  
-  
-const fjwt = require('fastify-jwt-webapp')  
-  
-!async function () {  
+'use strict'
+
+require('pino-pretty')
+
+const fastify = require('fastify')({
+  https: true,
+  logger: {
+    prettyPrint: true,
+    level: 'trace'
+  }
+})
+
+const fjwt = require('fastify-jwt-webapp')
+
+const config = require('./config')
+
+!async function () {
+  // just local TLS
   await fastify.register(require('fastify-tls-keygen'))
-  await fastify.register(fjwt, {  
-    urlLogin: 'https://yourface.auth0.com/authorize',  
-	urlAuthorizationCode: 'https://yourface.auth0.com/oauth/token',  
-    urlJWKS: 'https://yourface.auth0.com/.well-known/jwks.json',  
-    client_id: 'your client_id',  
-    client_secret: 'your client_secret',  
-    redirect_uri: 'http://localhost:3000/callback'  
-  })  
-  fastify.get('/', async function (req, reply) {  
-    reply.send(req.credentials)  
+  // register the plugin and pass config (from examples/config.js)
+  await fastify.register(fjwt, config.fjwt)
+
+  // a homepage with a login link
+  fastify.get('/', async function (req, reply) {
+    reply
+      .type('text/html')
+      .send('<a href="/login">Click here to log-in</a>')
   })
-  await fastify.listen(8443)  
-}()  
-  .catch(function (err) {  
-    console.error(err.message)  
+
+  // a protected route that will simply display one's credentials
+  fastify.get('/credentials', async function (req, reply) {
+    reply.send({
+      credentials: req.credentials
+    })
   })
+
+  await fastify.listen(8443, 'localhost')
+}()
+  .catch(function (err) {
+    console.error(err.message)
+  })
+```
+### config.js
+```javascript
+'use strict'
+
+const config = {}
+
+config.fjwt = {
+  service: 'auth0',
+  urlLogin: 'https://instance.auth0.com/authorize',
+  urlAuthorizationCode: 'https://instance.auth0.com/oauth/token',
+  urlJWKS: 'https://instance.auth0.com/.well-known/jwks.json',
+  client_id: '',
+  client_secret: '',
+  redirect_uri: 'https://localhost:8443/callback',
+  // the following is optional
+  pathSuccessRedirect: '/credentials', // '/' by default
+  pathExempt: [
+    '/',
+    '/login',
+    '/callback'
+  ], // ['/login', '/callback'] by default
+  authorizationCallback: async function (jwtResponse, req, reply) {
+    req.log.info('hello from authorizationCallback!')
+    req.log.info('jwtResponse: %o', jwtResponse)
+  }
+}
+
+module.exports = config
+
 ```
 
 ## Cookie

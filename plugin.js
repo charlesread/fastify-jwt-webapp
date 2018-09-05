@@ -15,6 +15,7 @@ const config = require(path.join(__dirname, 'lib', 'config.js'))
 
 let log
 let client
+let _config
 
 const functionGetJWT = function (_authorizationCode) {
   log.trace('functionGetJWT was invoked')
@@ -40,9 +41,18 @@ const getKey = function (header, callback) {
   })
 }
 
+const verifyJWT = function (_token) {
+  return new Promise(function (resolve, reject) {
+    jsonwebtoken.verify(_token, getKey, function (err, decodedToken) {
+      if (err) return reject(err)
+      return resolve(decodedToken)
+    })
+  })
+}
+
 const implementation = function (fastify, options, next) {
 
-  const _config = config.init(options)
+  _config = config.init(options)
 
   log = fastify.log.child({module: 'fjwt'})
 
@@ -70,20 +80,34 @@ const implementation = function (fastify, options, next) {
     // this endpoint will convert the authorization code to a JWT and set a cookie with the JWT
     fastify.get(_config.pathCallback, async function (req, reply) {
       log.trace(`callback endpoint requested, code: ${req.query.code}`)
+      // trade the auth code for a JWT
       const jwtResponse = await functionGetJWT(req.query.code, _config)
-      fastify.log.debug('jwtResponse: %o', jwtResponse)
-      const token = jwtResponse.id_token
-      fastify.log.debug(`token: ${token}`)
-      if (_config.authorizationCallback) {
+      log.debug('jwtResponse: %o', jwtResponse)
+      // pull out the actual JWT from the response
+      const token = jwtResponse[_config.nameTokenAttribute]
+      log.debug(`token: ${token}`)
+      if (token) {
+        let decodedToken
         try {
-          await _config.authorizationCallback(jwtResponse, req, reply)
+          decodedToken = await verifyJWT(token)
+          log.trace('the token was successfully decoded: %o', decodedToken)
+          // call the user-defined callback upon successful authentication, totally optional
+          if (_config.authorizationCallback) {
+            try {
+              await _config.authorizationCallback(jwtResponse, req, reply)
+            } catch (err) {
+              log.warn(err.message)
+            }
+          }
+          return reply
+            .setCookie(_config.cookie.name, token, _config.cookie)
+            .redirect(_config.pathSuccessRedirect)
         } catch (err) {
-          fastify.log.warn(err.message)
+          log.warn('the token was not successfully decoded, no cookie will be set')
+          return reply
+            .redirect(_config.pathLogin)
         }
       }
-      return reply
-        .setCookie(_config.cookie.name, token, _config.cookie)
-        .redirect(_config.pathSuccessRedirect)
     })
 
     fastify.decorateRequest(_config.nameCredentialsDecorator, undefined)
@@ -96,13 +120,13 @@ const implementation = function (fastify, options, next) {
         // let the request through if it's exempt
         const token = req.cookies[_config.cookie.name]
         if (token) {
-          log.trace(`a token exists: ${token}`)
+          log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
           jsonwebtoken.verify(token, getKey, function (err, decodedToken) {
             if (err) {
               log.trace('token verification was not successful: %j', err.message)
               if (!_config.pathExempt.includes(originalUrl)) {
                 log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlLogin}`)
-                return reply.redirect(config.generateAuthorizationUrl())
+                return reply.redirect(_config.pathLogin)
               }
               log.trace(`pathExempt DOES include ${originalUrl}`)
               return next()
@@ -115,7 +139,7 @@ const implementation = function (fastify, options, next) {
           log.trace('a token does not exist')
           if (!_config.pathExempt.includes(originalUrl)) {
             log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlLogin}`)
-            return reply.redirect(config.generateAuthorizationUrl())
+            return reply.redirect(_config.pathLogin)
           }
           log.trace(`pathExempt DOES include ${originalUrl}`)
           return next()
