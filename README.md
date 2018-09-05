@@ -116,6 +116,7 @@ This plugin does not treat refresh tokens, but there's no reason that you couldn
 | client_id | _required_ |  | Your client ID. |
 | client_secret | _required_ |  | You client secret. |
 | urlAuthorize | _required_ |  | The URL that your IdP uses for login, `https://yourinstance.auth0.com/authorize`, for example. |
+| urlToken | _required_ |  | The URL that your IdP uses for exchanging an `authorization_code` for access token(s), in this case a JWT, `https://yourinstance.auth0.com/oauth/token`, for example. |
 | urlJWKS | _required_ |  | The URL that serves your JWKS, `https://yourinstance.auth0.com/.well-known/jwks.json`, for example. |
 | redirect_uri | _required_ |  | This is the URL to which an IdP should redirect in order to process the successful authentication, `https://myapp.example.com/callback`, for example. |
 | pathCallback |  | `/callback` | `fastify-jwt-webapp` creates several endpoints in your application, this is one of them, it processes the stuff that your IdP sends over after successful authentication, by default the endpoint is `/callback`, but you can change that with this parameter.  This is very related to the `redirect_uri` option mentioned above. |
