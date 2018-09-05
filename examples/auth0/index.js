@@ -10,7 +10,7 @@ const fastify = require('fastify')({
   }
 })
 
-const fjwt = require('../../plugin')
+const fjwt = require('fastify-jwt-webapp')
 
 const config = require('./config')
 
