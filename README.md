@@ -9,6 +9,8 @@ To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charl
 <!-- toc -->
 
 - [Example](#example)
+  * [index.js](#indexjs)
+  * [config.js](#configjs)
 - [Cookie](#cookie)
 - [Refresh Tokens](#refresh-tokens)
 - [Options](#options)
@@ -17,7 +19,8 @@ To see *fastify-jwt-webapp* in the wild check out [my website](https://www.charl
 
 ## Example  
 ```bash  
-npm install --save fastify-jwt-webapp```  
+npm install --save fastify-jwt-webapp
+```  
 ### index.js  
 ```javascript  
 'use strict'  
@@ -50,9 +53,10 @@ const config = require('./config')
 }()  
  .catch(function (err) {  
  console.error(err.message)  
- })``` 
+ })
+ ``` 
  
-### config.js  
+### config.js 
 
 ```javascript  
 'use strict'  
