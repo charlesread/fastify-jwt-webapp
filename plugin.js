@@ -117,24 +117,26 @@ const implementation = function (fastify, options, next) {
         log.trace('fastify-jwt-webapp preHandler hook invoked')
         const originalUrl = (new URL(`http://dummy.com${req.raw.originalUrl}`)).pathname
         log.trace('originalUrl: %s', originalUrl)
-        // let the request through if it's exempt
         const token = req.cookies[_config.cookie.name]
         if (token) {
           log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
-          jsonwebtoken.verify(token, getKey, function (err, decodedToken) {
-            if (err) {
+          verifyJWT(token)
+            .then(function (decodedToken) {
+              log.trace('verification was successful, decodedToken: %j', decodedToken)
+              req[_config.nameCredentialsDecorator] = decodedToken
+              return next()
+            })
+            .catch(function (err) {
               log.trace('token verification was not successful: %j', err.message)
               if (!_config.pathExempt.includes(originalUrl)) {
                 log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
                 return reply.redirect(_config.pathLogin)
+              } else {
+                log.trace(`pathExempt DOES include ${originalUrl}`)
+                return next()
               }
-              log.trace(`pathExempt DOES include ${originalUrl}`)
-              return next()
-            }
-            log.trace('verification was successful, decodedToken: %j', decodedToken)
-            req[_config.nameCredentialsDecorator] = decodedToken
-            return next()
-          })
+
+            })
         } else {
           log.trace('a token does not exist')
           if (!_config.pathExempt.includes(originalUrl)) {
