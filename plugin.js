@@ -5,62 +5,23 @@ const path = require('path')
 const URL = require('url').URL
 
 // npm modules
-const jwksClient = require('jwks-rsa')
-const jsonwebtoken = require('jsonwebtoken')
 const fp = require('fastify-plugin')
-const request = require('request')
 
 // custom modules
 const config = require(path.join(__dirname, 'lib', 'config.js'))
+const util = require(path.join(__dirname, 'lib', 'util.js'))
 
 let log
-let client
 let _config
-
-const functionGetJWT = function (_authorizationCode) {
-  log.trace('functionGetJWT was invoked')
-  return new Promise(function (resolve, reject) {
-    const requestObject = config.generateTokenRequestObject(_authorizationCode)
-    console.log(requestObject)
-    request(requestObject, function (err, response, body) {
-      if (err) {
-        return reject(err)
-      }
-      log.trace('functionGetJWT was successful, body: %j', body)
-      return resolve(body)
-    })
-  })
-}
-
-const getKey = function (header, callback) {
-  log.trace('getKey was invoked')
-  client.getSigningKey(header.kid, function (err, key) {
-    if (err) return callback(err, null)
-    const signingKey = key.publicKey || key.rsaPublicKey;
-    callback(null, signingKey)
-  })
-}
-
-const verifyJWT = function (_token) {
-  return new Promise(function (resolve, reject) {
-    jsonwebtoken.verify(_token, getKey, function (err, decodedToken) {
-      if (err) return reject(err)
-      return resolve(decodedToken)
-    })
-  })
-}
 
 const implementation = function (fastify, options, next) {
 
   _config = config.init(options)
+  util.init(config)
 
   log = fastify.log.child({module: 'fjwt'})
 
   try {
-
-    client = jwksClient({
-      jwksUri: _config.urlJWKS
-    })
 
     // register cookie plugin so that we can persist the JWT from request to request
     fastify.register(require('fastify-cookie'), function (err) {
@@ -70,10 +31,10 @@ const implementation = function (fastify, options, next) {
     // endpoint for logging in
     fastify.get(_config.pathLogin, async function (req, reply) {
       log.trace('%s was invoked', _config.pathLogin)
-      const authorozationUrl = config.generateAuthorizationUrl()
-      log.trace('generated authorizationUrl: %s', authorozationUrl)
+      const authorizationUrl = config.generateAuthorizationUrl()
+      log.trace('generated authorizationUrl: %s', authorizationUrl)
       // redirect to authentication provider (like Auth0)
-      return reply.redirect(authorozationUrl)
+      return reply.redirect(authorizationUrl)
     })
 
     // callback endpoint that will be redirected to once successfully authenticated with the authentication provider
@@ -81,7 +42,7 @@ const implementation = function (fastify, options, next) {
     fastify.get(_config.pathCallback, async function (req, reply) {
       log.trace(`callback endpoint requested, code: ${req.query.code}`)
       // trade the auth code for a JWT
-      const jwtResponse = await functionGetJWT(req.query.code, _config)
+      const jwtResponse = await util.functionGetJWT(req.query.code, _config)
       log.debug('jwtResponse: %o', jwtResponse)
       // pull out the actual JWT from the response
       const token = jwtResponse[_config.nameTokenAttribute]
@@ -89,7 +50,7 @@ const implementation = function (fastify, options, next) {
       if (token) {
         let decodedToken
         try {
-          decodedToken = await verifyJWT(token)
+          decodedToken = await util.verifyJWT(token)
           log.trace('the token was successfully decoded: %o', decodedToken)
           // call the user-defined callback upon successful authentication, totally optional
           if (_config.authorizationCallback) {
@@ -103,7 +64,7 @@ const implementation = function (fastify, options, next) {
             .setCookie(_config.cookie.name, token, _config.cookie)
             .redirect(_config.pathSuccessRedirect)
         } catch (err) {
-          log.warn('the token was not successfully decoded, no cookie will be set')
+          log.warn('the token was not successfully decoded, no cookie will be set: %s', err.message)
           return reply
             .redirect(_config.pathLogin)
         }
@@ -120,7 +81,7 @@ const implementation = function (fastify, options, next) {
         const token = req.cookies[_config.cookie.name]
         if (token) {
           log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
-          verifyJWT(token)
+          util.verifyJWT(token)
             .then(function (decodedToken) {
               log.trace('verification was successful, decodedToken: %j', decodedToken)
               req[_config.nameCredentialsDecorator] = decodedToken
@@ -135,7 +96,6 @@ const implementation = function (fastify, options, next) {
                 log.trace(`pathExempt DOES include ${originalUrl}`)
                 return next()
               }
-
             })
         } else {
           log.trace('a token does not exist')

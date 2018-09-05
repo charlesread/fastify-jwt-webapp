@@ -55,3 +55,5 @@ _config = config.init({
 requestObject = config.generateTokenRequestObject('456')
 
 tap.notOk(requestObject.json)
+
+tap.same(config.get(), _config)
