@@ -3,3 +3,4 @@ node_modules
 .cache
 .idea
 *.pem
+.nyc_output
