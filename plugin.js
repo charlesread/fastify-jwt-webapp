@@ -61,9 +61,7 @@ const implementation = async function (fastify, options) {
   const validate = ajv.compile(optionsSchema)
   const valid = validate(options)
   if (!valid) {
-    console.error('fastify-jwt-webapp was not passed the appropriate options:')
-    console.error(validate.errors)
-    throw new Error('fastify-jwt-webapp was not passed the appropriate options')
+    throw new Error(JSON.stringify(validate.errors))
   }
 
   _config = config.init(options)
