@@ -80,20 +80,19 @@ const implementation = function (fastify, options, next) {
       const token = req.cookies[_config.cookie.name]
       if (token) {
         log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
-        util.verifyJWT(token)
-          .then(function (decodedToken) {
-            log.trace('verification was successful, decodedToken: %j', decodedToken)
-            req[_config.nameCredentialsDecorator] = decodedToken
-          })
-          .catch(function (err) {
-            log.trace('token verification was not successful: %j', err.message)
-            if (!_config.pathExempt.includes(originalUrl)) {
-              log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
-              return reply.redirect(_config.pathLogin)
-            } else {
-              log.trace(`pathExempt DOES include ${originalUrl}`)
-            }
-          })
+        try {
+          await util.verifyJWT(token)
+          log.trace('verification was successful, decodedToken: %j', decodedToken)
+          req[_config.nameCredentialsDecorator] = decodedToken
+        } catch (err) {
+          log.trace('token verification was not successful: %j', err.message)
+          if (!_config.pathExempt.includes(originalUrl)) {
+            log.trace(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
+            return reply.redirect(_config.pathLogin)
+          } else {
+            log.trace(`pathExempt DOES include ${originalUrl}`)
+          }
+        }
       } else {
         log.trace('a token does not exist')
         if (!_config.pathExempt.includes(originalUrl)) {
