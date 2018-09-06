@@ -41,7 +41,7 @@ const fjwt = require('fastify-jwt-webapp')
 
 const config = require('./config')
 
-!async function () {
+async function main () {
   // just local TLS
   await fastify.register(require('fastify-tls-keygen'))
   // register the plugin and pass config (from examples/config.js)
@@ -62,7 +62,12 @@ const config = require('./config')
   })
 
   await fastify.listen(8443, 'localhost')
-}()
+}
+
+main()
+  .then(function() {
+    console.log('server started')
+  })
   .catch(function (err) {
     console.error(err.message)
   })
