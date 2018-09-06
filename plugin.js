@@ -24,9 +24,7 @@ const implementation = function (fastify, options, next) {
   try {
 
     // register cookie plugin so that we can persist the JWT from request to request
-    fastify.register(require('fastify-cookie'), function (err) {
-      if (err) return next(new Error(`there was an error registering fastify-cookie: ${err.message}`))
-    })
+    fastify.register(require('fastify-cookie'))
 
     // endpoint for logging in
     fastify.get(_config.pathLogin, async function (req, reply) {
