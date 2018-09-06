@@ -130,3 +130,4 @@ This plugin does not treat refresh tokens, but there's no reason that you couldn
 | `pathSuccessRedirect` |  | `/` | Where do you get redirected after successful authentication?  `pathSuccessRedirect`, that's where. |
 | `pathExempt` |   | `['/login', '/callback']` | An array of endpoint paths to be excluded from the actions of the plugin (unauthenticated routes). |
 | `nameCredentialsDecorator` |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
+| `authorizationCallback` |  |  | `authorizationCallback` is a totally optional function with signature `async function(jwtResponse, request, reply)` that is called after successful authentication, it has absolutely no effect on the plugin's actual functionality. |
