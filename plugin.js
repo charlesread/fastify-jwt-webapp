@@ -6,6 +6,7 @@ const URL = require('url').URL
 
 // npm modules
 const fp = require('fastify-plugin')
+const Ajv = require('ajv')
 
 // custom modules
 const config = require(path.join(__dirname, 'lib', 'config.js'))
@@ -15,7 +16,55 @@ let log
 let _config
 let util
 
+const optionsSchema = {
+  properties: {
+    service: {
+      type: 'string',
+      enum: ['auth0', 'o365']
+    },
+    client_id: {
+      type: 'string'
+    },
+    client_secret: {
+      type: 'string'
+    },
+    urlAuthorize: {
+      type: 'string',
+      format: 'uri'
+    },
+    urlToken: {
+      type: 'string',
+      format: 'uri'
+    },
+    urlJWKS: {
+      type: 'string',
+      format: 'uri'
+    },
+    redirect_uri: {
+      type: 'string',
+      format: 'uri'
+    }
+  },
+  required: [
+    'client_id',
+    'client_secret',
+    'urlAuthorize',
+    'urlToken',
+    'urlJWKS',
+    'redirect_uri'
+  ]
+}
+
 const implementation = async function (fastify, options) {
+
+  const ajv = new Ajv()
+  const validate = ajv.compile(optionsSchema)
+  const valid = validate(options)
+  if (!valid) {
+    console.error('fastify-jwt-webapp was not passed the appropriate options:')
+    console.error(validate.errors)
+    throw new Error('fastify-jwt-webapp was not passed the appropriate options')
+  }
 
   _config = config.init(options)
   util = utilFactory(config)
