@@ -20,7 +20,7 @@
     "auth",
     "sso"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "deep-extend": "^0.6.0",
     "fastify-cookie": "^2.0.1",
