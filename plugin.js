@@ -9,15 +9,16 @@ const fp = require('fastify-plugin')
 
 // custom modules
 const config = require(path.join(__dirname, 'lib', 'config.js'))
-const util = require(path.join(__dirname, 'lib', 'util.js'))
+const utilFactory = require(path.join(__dirname, 'lib', 'util.js'))
 
 let log
 let _config
+let util
 
 const implementation = async function (fastify, options) {
 
   _config = config.init(options)
-  util.init(config)
+  util = utilFactory(config)
 
   log = fastify.log.child({module: 'fjwt'})
 
@@ -77,7 +78,7 @@ const implementation = async function (fastify, options) {
     if (token) {
       log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
       try {
-        await util.verifyJWT(token)
+        const decodedToken = await util.verifyJWT(token)
         log.trace('verification was successful, decodedToken: %j', decodedToken)
         req[_config.nameCredentialsDecorator] = decodedToken
       } catch (err) {
