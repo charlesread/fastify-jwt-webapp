@@ -9,13 +9,13 @@ const fp = require('fastify-plugin')
 
 // custom modules
 const configFactory = require(path.join(__dirname, 'lib', 'config.js'))
-const utilFactory = require(path.join(__dirname, 'lib', 'util.js'))
+const utilFactory = require(path.join(__dirname, 'lib', 'config.js'))
 
 const implementation = async function (fastify, options) {
 
   const config = configFactory(options)
   const _config = config.get()
-  const util = utilFactory(config)
+  // const util = utilFactory(config)
   const log = fastify.log.child({module: 'fjwt'})
 
   // register cookie plugin so that we can persist the JWT from request to request
@@ -35,7 +35,7 @@ const implementation = async function (fastify, options) {
   fastify.get(_config.pathCallback, async function (req, reply) {
     log.trace(`callback endpoint requested, code: ${req.query.code}`)
     // trade the auth code for a JWT
-    const jwtResponse = await util.functionGetJWT(req.query.code)
+    const jwtResponse = await config.functionGetJWT(req.query.code)
     log.debug('jwtResponse: %o', jwtResponse)
     // pull out the actual JWT from the response
     const token = jwtResponse[_config.nameTokenAttribute]
@@ -43,7 +43,7 @@ const implementation = async function (fastify, options) {
     if (token) {
       let decodedToken
       try {
-        decodedToken = await util.verifyJWT(token)
+        decodedToken = await config.verifyJWT(token)
         log.trace('the token was successfully decoded: %o', decodedToken)
         // call the user-defined callback upon successful authentication, totally optional
         if (config.authorizationCallback) {
@@ -76,7 +76,7 @@ const implementation = async function (fastify, options) {
     if (token) {
       log.trace(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
       try {
-        const decodedToken = await util.verifyJWT(token)
+        const decodedToken = await config.verifyJWT(token)
         log.trace('verification was successful, decodedToken: %j', decodedToken)
         req[_config.nameCredentialsDecorator] = decodedToken
       } catch (err) {

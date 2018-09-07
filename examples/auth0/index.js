@@ -17,7 +17,6 @@ const config = require('./config')
 !async function () {
   // just local TLS
   await fastify.register(require('fastify-tls-keygen'))
-  // register the plugin and pass config (from examples/config.js)
   await fastify.register(fjwt, config.fjwt)
 
   // a homepage with a login link

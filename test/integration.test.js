@@ -14,16 +14,27 @@ const configs = {
     urlAuthorize: 'http://www.example.com',
     urlToken: 'http://www.example.com',
     urlJWKS: 'http://www.example.com',
-    redirect_uri: 'http://www.example.com'
+    redirect_uri: 'http://www.example.com',
+    functionGetJWT: async function() {
+      return {
+        id_token: 'someJWT'
+      }
+    },
+    verifyJWT: function () {
+      return {
+        sub: 'cread',
+        iss: 'dsfd9-0idfk2349089dsahfs98dh'
+      }
+    }
   }
 }
 
 function buildFastify(_pluginOptions) {
   const f = Fastify({
-    logger: {
-      level: 'trace',
-      stream: process.stdout
-    }
+    // logger: {
+    //   level: 'trace',
+    //   stream: process.stdout
+    // }
   })
   f.register(plugin, _pluginOptions)
   return f
@@ -59,27 +70,89 @@ tap.test('/login should redirect to urlAuthorize', async function (t) {
   f.close(t.end)
 })
 
-tap.test('/callback should work', async function (t) {
-  t.plan(0)
-  nock(configs.good.urlToken)
-    .post('/')
-    .reply(200, {
-      id_token: 'blah'
-    })
-  nock(configs.good.urlToken)
-    .post('/')
-    .reply(200, {
-      id_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.TCYt5XsITJX1CxPCT8yAV-TVkIEq_PbChOMqsLfRoPsnsgw5WEuts01mq-pQy7UJiN5mgRxD-WUcX16dUEMGlv50aqzpqh4Qktb3rk-BuQy72IFLOqV0G_zS245-kronKb78cPN25DGlcTwLtjPAYuNzVBAh4vGHSrQyHUdBBPM'
-    })
-
+tap.test('/callback should work when JWT is kosher', async function (t) {
+  t.plan(2)
   let f = buildFastify(configs.good)
   await f.listen(3000)
-  await f.inject({
+  const response = await f.inject({
     method: 'GET',
     url: '/callback?code=123'
   })
-  // t.equal(response.statusCode, 302)
-  // t.equal(response.headers.location, 'http://www.example.com/?response_type=code&scope=openid&client_id=abc&redirect_uri=http%3A%2F%2Fwww.example.com')
+  t.equal(response.statusCode, 302)
+  t.equal(response.headers.location, '/')
   f.close(t.end)
 })
 
+tap.test('/callback should NOT work when JWT is fubar', async function (t) {
+  t.plan(1)
+  let f = buildFastify({
+    client_id: 'abc',
+    client_secret: '123',
+    urlAuthorize: 'http://www.example.com',
+    urlToken: 'http://www.example.com',
+    urlJWKS: 'http://www.example.com',
+    redirect_uri: 'http://www.example.com',
+    functionGetJWT: async function() {
+      throw new Error('you know what you did')
+    }
+  })
+  await f.listen(3000)
+  const response = await f.inject({
+    method: 'GET',
+    url: '/callback?code=123'
+  })
+  t.equal(response.statusCode, 500)
+  f.close(t.end)
+})
+
+tap.test('/callback should work when one can get the JWT but it can not be verified', async function (t) {
+  t.plan(2)
+  let f = buildFastify({
+    client_id: 'abc',
+    client_secret: '123',
+    urlAuthorize: 'http://www.example.com',
+    urlToken: 'http://www.example.com',
+    urlJWKS: 'http://www.example.com',
+    redirect_uri: 'http://www.example.com',
+    functionGetJWT: async function() {
+      return {
+        id_token: 'someJWT'
+      }
+    },
+    verifyJWT: function () {
+      throw new Error('haha')
+    }
+  })
+  await f.listen(3000)
+  const response = await f.inject({
+    method: 'GET',
+    url: '/callback?code=123'
+  })
+  t.equal(response.statusCode, 302)
+  t.equal(response.headers.location, '/login')
+  f.close(t.end)
+})
+
+tap.test('/callback should work when the JWT id_token attribute is not found', async function (t) {
+  t.plan(1)
+  let f = buildFastify({
+    client_id: 'abc',
+    client_secret: '123',
+    urlAuthorize: 'http://www.example.com',
+    urlToken: 'http://www.example.com',
+    urlJWKS: 'http://www.example.com',
+    redirect_uri: 'http://www.example.com',
+    functionGetJWT: async function() {
+      return {
+        id_tokenz: 'someJWT'
+      }
+    }
+  })
+  await f.listen(3000)
+  const response = await f.inject({
+    method: 'GET',
+    url: '/callback?code=123'
+  })
+  t.equal(response.statusCode, 500)
+  f.close(t.end)
+})
