@@ -20,6 +20,9 @@ config.fjwt = {
   authorizationCallback: async function (jwtResponse, req, reply) {
     req.log.info('hello from authorizationCallback!')
     req.log.info('jwtResponse: %o', jwtResponse)
+  },
+  cookie: {
+    domain: 'localhost'
   }
 }
 

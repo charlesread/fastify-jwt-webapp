@@ -6,68 +6,17 @@ const URL = require('url').URL
 
 // npm modules
 const fp = require('fastify-plugin')
-const Ajv = require('ajv')
 
 // custom modules
-const config = require(path.join(__dirname, 'lib', 'config.js'))
+const configFactory = require(path.join(__dirname, 'lib', 'config.js'))
 const utilFactory = require(path.join(__dirname, 'lib', 'util.js'))
-
-let log
-let _config
-let util
-
-const optionsSchema = {
-  properties: {
-    service: {
-      type: 'string',
-      enum: ['auth0', 'o365']
-    },
-    client_id: {
-      type: 'string'
-    },
-    client_secret: {
-      type: 'string'
-    },
-    urlAuthorize: {
-      type: 'string',
-      format: 'uri'
-    },
-    urlToken: {
-      type: 'string',
-      format: 'uri'
-    },
-    urlJWKS: {
-      type: 'string',
-      format: 'uri'
-    },
-    redirect_uri: {
-      type: 'string',
-      format: 'uri'
-    }
-  },
-  required: [
-    'client_id',
-    'client_secret',
-    'urlAuthorize',
-    'urlToken',
-    'urlJWKS',
-    'redirect_uri'
-  ]
-}
 
 const implementation = async function (fastify, options) {
 
-  const ajv = new Ajv()
-  const validate = ajv.compile(optionsSchema)
-  const valid = validate(options)
-  if (!valid) {
-    throw new Error(JSON.stringify(validate.errors))
-  }
-
-  _config = config.init(options)
-  util = utilFactory(config)
-
-  log = fastify.log.child({module: 'fjwt'})
+  const config = configFactory(options)
+  const _config = config.get()
+  const util = utilFactory(config)
+  const log = fastify.log.child({module: 'fjwt'})
 
   // register cookie plugin so that we can persist the JWT from request to request
   fastify.register(require('fastify-cookie'))
@@ -86,7 +35,7 @@ const implementation = async function (fastify, options) {
   fastify.get(_config.pathCallback, async function (req, reply) {
     log.trace(`callback endpoint requested, code: ${req.query.code}`)
     // trade the auth code for a JWT
-    const jwtResponse = await util.functionGetJWT(req.query.code, _config)
+    const jwtResponse = await util.functionGetJWT(req.query.code)
     log.debug('jwtResponse: %o', jwtResponse)
     // pull out the actual JWT from the response
     const token = jwtResponse[_config.nameTokenAttribute]
@@ -97,9 +46,9 @@ const implementation = async function (fastify, options) {
         decodedToken = await util.verifyJWT(token)
         log.trace('the token was successfully decoded: %o', decodedToken)
         // call the user-defined callback upon successful authentication, totally optional
-        if (_config.authorizationCallback) {
+        if (config.authorizationCallback) {
           try {
-            await _config.authorizationCallback(jwtResponse, req, reply)
+            await config.authorizationCallback(jwtResponse, req, reply)
           } catch (err) {
             log.warn(err.message)
           }
@@ -112,6 +61,8 @@ const implementation = async function (fastify, options) {
         return reply
           .redirect(_config.pathLogin)
       }
+    } else {
+      throw new Error('authorization_code could not be exchanged for a JWT')
     }
   })
 

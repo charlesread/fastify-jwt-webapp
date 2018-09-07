@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "ajv": "^6.5.3",
+    "better-ajv-errors": "^0.5.4",
     "deep-extend": "^0.6.0",
     "fastify-cookie": "^2.0.1",
     "fastify-plugin": "^1.2.0",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "fastify": "^1.11.0",
     "fastify-tls-keygen": "^1.1.0",
+    "nock": "^9.6.1",
     "pino-pretty": "^2.1.0",
     "tap": "^12.0.1"
   }
