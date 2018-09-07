@@ -25,6 +25,9 @@ const configs = {
         sub: 'cread',
         iss: 'dsfd9-0idfk2349089dsahfs98dh'
       }
+    },
+    authorizationCallback: async function (j, req, reply) {
+      console.log(1234565)
     }
   }
 }
@@ -154,5 +157,38 @@ tap.test('/callback should work when the JWT id_token attribute is not found', a
     url: '/callback?code=123'
   })
   t.equal(response.statusCode, 500)
+  f.close(t.end)
+})
+
+tap.test('authorizationCallback should warn', async function (t) {
+  t.plan(1)
+  let f = buildFastify({
+    client_id: 'abc',
+    client_secret: '123',
+    urlAuthorize: 'http://www.example.com',
+    urlToken: 'http://www.example.com',
+    urlJWKS: 'http://www.example.com',
+    redirect_uri: 'http://www.example.com',
+    functionGetJWT: async function() {
+      return {
+        id_token: 'someJWT'
+      }
+    },
+    verifyJWT: function () {
+      return {
+        sub: 'cread',
+        iss: 'dsfd9-0idfk2349089dsahfs98dh'
+      }
+    },
+    authorizationCallback: async function (j, req, reply) {
+      throw new Error('warn')
+    }
+  })
+  await f.listen(3000)
+  const response = await f.inject({
+    method: 'GET',
+    url: '/callback?code=123'
+  })
+  t.equal(response.statusCode, 302)
   f.close(t.end)
 })

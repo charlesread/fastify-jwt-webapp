@@ -46,9 +46,9 @@ const implementation = async function (fastify, options) {
         decodedToken = await config.verifyJWT(token)
         log.trace('the token was successfully decoded: %o', decodedToken)
         // call the user-defined callback upon successful authentication, totally optional
-        if (config.authorizationCallback) {
+        if (_config.authorizationCallback) {
           try {
-            await config.authorizationCallback(jwtResponse, req, reply)
+            await _config.authorizationCallback(jwtResponse, req, reply)
           } catch (err) {
             log.warn(err.message)
           }
