@@ -16,6 +16,7 @@ To see _fastify-jwt-webapp_ in the wild check out [my website](https://www.charl
   * [config.js](#configjs)
 - [Cookie](#cookie)
 - [Refresh Tokens](#refresh-tokens)
+- [JWKS Caching](#jwks-caching)
 - [Options](#options)
 
 <!-- tocstop -->
