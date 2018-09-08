@@ -115,6 +115,10 @@ Being "logged-in" is achieved by passing along the JWT along with each request, 
 ## Refresh Tokens  
   
 This plugin does not treat refresh tokens, but there's no reason that you couldn't implement this functionality yourself. #sorrynotsorry  
+
+## JWKS Caching
+
+Fetching the JWKS is by far the most taxing part of this whole process; often making your request 10x slower, that's just the cost of doing business with JWTs in this context because the JWT needs to be verified on each request, and that entails having the public key, thus fetching the JWKS from `options.urlJWKS` on _every single request_.  Fortunately, a JWKS doesn't change particularly frequently, _fastify-jwt-webapp_ can cache the JWKS for `options.cacheJWKSAge` milliseconds, even a value like `10000` (10 seconds) will, in the long-term, add up to much less time spent fetching the JWKS and significantly snappier requests (well, at least until `options.cacheJWKSAge` milliseconds after the caching request, at which point the cache will be refreshed for another `options.cacheJWKSAge` milliseconds).
   
 ## Options  
   
@@ -134,3 +138,4 @@ This plugin does not treat refresh tokens, but there's no reason that you couldn
 | `pathExempt` |   | `['/login', '/callback']` | An array of endpoint paths to be excluded from the actions of the plugin (unauthenticated routes). |
 | `nameCredentialsDecorator` |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
 | `authorizationCallback` |  |  | `authorizationCallback` is a totally optional function with signature `async function(jwtResponse, request, reply)` that is called after successful authentication, it has absolutely no effect on the plugin's actual functionality. |
+| `cacheJWKSAge` | _(disabled)_ |  | Will cache the JWKS for `cacheJWKSAge` milliseconds after the first request that needs it.|

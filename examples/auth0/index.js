@@ -5,10 +5,10 @@ require('pino-pretty')
 const fastify = require('fastify')({
   https: true,
   // ,
-  logger: {
-    prettyPrint: true,
-    level: 'trace'
-  }
+  // logger: {
+  //   prettyPrint: true,
+  //   level: 'trace'
+  // }
 })
 
 const fjwt = require('../../plugin')
