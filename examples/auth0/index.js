@@ -4,6 +4,7 @@ require('pino-pretty')
 
 const fastify = require('fastify')({
   https: true,
+  // ,
   logger: {
     prettyPrint: true,
     level: 'trace'
