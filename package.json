@@ -7,7 +7,7 @@
     "example": "examples"
   },
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap --cov test/*.js"
   },
   "author": "Charles Read <charles@charlesread.io>",
   "repository": "https://github.com/charlesread/fastify-jwt-webapp",
