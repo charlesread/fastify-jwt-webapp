@@ -1,6 +1,7 @@
 'use strict'
 
 const tap = require('tap')
+const nock = require('nock')
 
 const configFactory = require('../lib/config')
 
@@ -88,3 +89,14 @@ tap.test('generated url and object should be correct', function (t) {
 })
 
 tap.doesNotThrow(configFactory(options.good).get, 'get() doesn\'t shit the bed')
+
+nock('https://charlesread.auth0.com')
+  .post('/oauth/token', configFactory(options.good).generateTokenRequestObject('code').body)
+  .reply(200, {
+    foo: 'bar'
+  })
+
+configFactory(options.good).functionGetJWT('code')
+  .then(function (res) {
+    tap.same(res, {foo: 'bar'})
+  })

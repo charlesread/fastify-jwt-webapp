@@ -47,6 +47,7 @@ const implementation = async function (fastify, options) {
         log.trace('the token was successfully decoded: %o', decodedToken)
         // call the user-defined callback upon successful authentication, totally optional
         if (_config.authorizationCallback) {
+          log.trace('authorizationCallback was specified')
           try {
             await _config.authorizationCallback(jwtResponse, req, reply)
           } catch (err) {
