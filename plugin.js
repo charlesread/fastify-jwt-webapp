@@ -80,16 +80,16 @@ const implementation = async function (fastify, options) {
     if (token) {
       log.debug(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
       try {
-        const decodedToken = await config.verifyJWT(token)
-        log.debug('verification was successful, decodedToken: %j', decodedToken)
-        req[_config.nameCredentialsDecorator] = decodedToken
+        const verifiedToken = await config.verifyJWT(token)
+        log.debug('token verification was successful, verified token: %j', verifiedToken)
+        req[_config.nameCredentialsDecorator] = verifiedToken
       } catch (err) {
         log.debug('token verification was not successful: %j', err.message)
         if (!_config.pathExempt.includes(originalUrl)) {
           log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
           return reply.redirect(_config.pathLogin)
         } else {
-          log.debug(`pathExempt DOES include ${originalUrl}`)
+          log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
         }
       }
     } else {
