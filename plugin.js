@@ -87,7 +87,8 @@ const implementation = async function (fastify, options) {
         log.debug('token verification was not successful: %j', err.message)
         if (!_config.pathExempt.includes(originalUrl)) {
           log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
-          return reply.redirect(_config.pathLogin)
+          return reply
+            .redirect(_config.pathLogin)
         } else {
           log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
         }
@@ -96,7 +97,8 @@ const implementation = async function (fastify, options) {
       log.debug('a token does not exist')
       if (!_config.pathExempt.includes(originalUrl)) {
         log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
-        return reply.redirect(_config.pathLogin)
+        return reply
+          .redirect(_config.urlAuthorize)
       }
       log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
     }

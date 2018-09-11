@@ -35,10 +35,10 @@ const configs = {
 
 function buildFastify(_pluginOptions) {
   const f = Fastify({
-    // logger: {
-    //   level: 'trace',
-    //   stream: process.stdout
-    // }
+    logger: {
+      level: 'trace',
+      stream: process.stdout
+    }
   })
   f.register(plugin, _pluginOptions)
   return f
