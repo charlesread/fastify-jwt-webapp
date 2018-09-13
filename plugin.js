@@ -88,6 +88,7 @@ const implementation = async function (fastify, options) {
         if (!_config.pathExempt.includes(originalUrl)) {
           log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
           return reply
+            .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
             .redirect(_config.pathLogin)
         } else {
           log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
