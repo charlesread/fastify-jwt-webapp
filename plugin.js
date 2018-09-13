@@ -99,7 +99,7 @@ const implementation = async function (fastify, options) {
       if (!_config.pathExempt.includes(originalUrl)) {
         log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
         return reply
-          .redirect(_config.urlAuthorize)
+          .redirect(_config.pathLogin)
       }
       log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
     }
