@@ -32,13 +32,19 @@ const implementation = async function (fastify, options) {
   // this endpoint will convert the authorization code to a JWT and set a cookie with the JWT
   fastify.get(_config.pathCallback, async function (req, reply) {
     log.debug(`fastify-jwt-webapp callback endpoint ${_config.pathCallback} requested`)
-    // trade the auth code for a JWT
-    log.debug(`exchanging ${req.query.code} for a JWT`)
-    const jwtResponse = await config.functionGetJWT(req.query.code)
-    log.debug('functionGetJWT invoked, response: %o', jwtResponse)
-    // pull out the actual JWT from the response
-    const token = jwtResponse[_config.nameTokenAttribute]
-    log.debug(`token received from functionGetJWT: ${token}`)
+    let token
+    if (_config.mode === 'id_token') {
+      log.debug('id_token mode detected')
+      token = req.query.id_token
+    } else {
+      // trade the auth code for a JWT
+      log.debug(`exchanging ${req.query.code} for a JWT`)
+      const jwtResponse = await config.functionGetJWT(req.query.code)
+      log.debug('functionGetJWT invoked, response: %o', jwtResponse)
+      // pull out the actual JWT from the response
+      token = jwtResponse[_config.nameTokenAttribute]
+    }
+    log.debug(`token attained: ${token}`)
     if (token) {
       log.debug('the token exists')
       let decodedToken
