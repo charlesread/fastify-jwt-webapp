@@ -97,7 +97,10 @@ const implementation = async function (fastify, options) {
             .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
             .redirect(_config.pathLogin)
         } else {
-          log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
+          log.debug(`pathExempt DOES include ${originalUrl}, letting through, but killing that shitty cookie`)
+          return reply
+            .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
+            .redirect(req.raw.originalUrl)
         }
       }
     } else {
