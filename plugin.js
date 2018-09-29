@@ -29,7 +29,7 @@ const implementation = async function (fastify, options) {
   })
 
   // endpoint for logging out
-  fastify.get(_config.pathLogin, async function (req, reply) {
+  fastify.get(_config.pathLogout, async function (req, reply) {
     log.debug('%s was invoked', _config.pathLogout)
     return reply
       .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
