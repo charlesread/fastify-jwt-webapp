@@ -32,7 +32,7 @@ const implementation = async function (fastify, options) {
   fastify.get(_config.pathLogout, async function (req, reply) {
     log.debug('%s was invoked', _config.pathLogout)
     return reply
-      .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
+      .setCookie(_config.cookie.name, '', Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
       .redirect(_config.pathLogoutRedirect)
   })
 
