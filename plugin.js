@@ -6,6 +6,7 @@ const URL = require('url').URL
 
 // npm modules
 const fp = require('fastify-plugin')
+const moment = require('moment')
 
 // custom modules
 const configFactory = require(path.join(__dirname, 'lib', 'config.js'))
@@ -15,6 +16,10 @@ const implementation = async function (fastify, options) {
   const config = configFactory(options)
   const _config = config.get()
   const log = fastify.log.child({module: 'fastify-jwt-webapp'})
+
+  function getCookieOptionsForExpiration(_expirationDate) {
+    return Object.assign({}, _config.cookie, {expires: new Date(_expirationDate)})
+  }
 
   // register cookie plugin so that we can persist the JWT from request to request
   fastify.register(require('fastify-cookie'))
@@ -31,8 +36,10 @@ const implementation = async function (fastify, options) {
   // endpoint for logging out
   fastify.get(_config.pathLogout, async function (req, reply) {
     log.debug('%s was invoked', _config.pathLogout)
+    const _cookieOptions = getCookieOptionsForExpiration(moment().subtract(1, 'days'))
+    log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, '', _cookieOptions)
     return reply
-      .setCookie(_config.cookie.name, '', Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
+      .setCookie(_config.cookie.name, '', _cookieOptions)
       .redirect(_config.pathLogoutRedirect)
   })
 
@@ -69,9 +76,10 @@ const implementation = async function (fastify, options) {
             log.warn(err.message)
           }
         }
-        log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, token, _config.cookie)
+        const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
+        log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, token, _cookieOptions)
         return reply
-          .setCookie(_config.cookie.name, token, _config.cookie)
+          .setCookie(_config.cookie.name, token, _cookieOptions)
           .redirect(_config.pathSuccessRedirect)
       } catch (err) {
         log.warn('the token was not successfully verified, no cookie will be set: %s', err.message)
