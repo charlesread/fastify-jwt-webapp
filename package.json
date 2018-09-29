@@ -1,6 +1,6 @@
 {
   "name": "fastify-jwt-webapp",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "JWT for fastify webapps",
   "main": "plugin.js",
   "directories": {
