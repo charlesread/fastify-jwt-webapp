@@ -28,6 +28,14 @@ const implementation = async function (fastify, options) {
     return reply.redirect(authorizationUrl)
   })
 
+  // endpoint for logging out
+  fastify.get(_config.pathLogin, async function (req, reply) {
+    log.debug('%s was invoked', _config.pathLogout)
+    return reply
+      .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
+      .redirect(_config.pathLogoutRedirect)
+  })
+
   // callback endpoint that will be redirected to once successfully authenticated with the authentication provider
   // this endpoint will convert the authorization code to a JWT and set a cookie with the JWT
   fastify.get(_config.pathCallback, async function (req, reply) {
