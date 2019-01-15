@@ -2,40 +2,51 @@
 
 require('pino-pretty')
 
-const fastify = require('fastify')({
-  https: true,
-  logger: {
-    prettyPrint: true,
-    level: 'trace'
-  }
-})
+const pem = require('pem')
 
-const fjwt = require('../../plugin')
+let fastify
 
-const config = require('./config')
+pem.createCertificate({days: 1, selfSigned: true}, function(err, keys) {
 
-!async function () {
-  // just local TLS
-  await fastify.register(require('fastify-tls-keygen'))
-  // register the plugin and pass config (from examples/config.js)
-  await fastify.register(fjwt, config.fjwt)
+  if (err) throw err
 
-  // a homepage with a login link
-  fastify.get('/', async function (req, reply) {
-    reply
-      .type('text/html')
-      .send('<a href="/login">Click here to log-in</a>')
+  fastify = require('fastify')({
+    https: {
+      key: keys.serviceKey,
+      cert: keys.certificate
+    },
+    logger: {
+      prettyPrint: true,
+      level: 'trace'
+    }
   })
 
-  // a protected route that will simply display one's credentials
-  fastify.get('/credentials', async function (req, reply) {
-    reply.send({
-      credentials: req.credentials
+  const fjwt = require('../../plugin')
+
+  const config = require('./config')
+
+  !async function () {
+    // just local TLS
+    // await fastify.register(require('fastify-tls-keygen'))
+    await fastify.register(fjwt, config.fjwt)
+
+    // a homepage with a login link
+    fastify.get('/', async function (req, reply) {
+      reply
+          .type('text/html')
+          .send('<a href="/login">Click here to log-in</a>')
     })
-  })
 
-  await fastify.listen(8443, 'localhost')
-}()
-  .catch(function (err) {
-    console.error(err.message)
-  })
+    // a protected route that will simply display one's credentials
+    fastify.get('/credentials', async function (req, reply) {
+      reply.send({
+        credentials: req.credentials
+      })
+    })
+
+    await fastify.listen(8443, 'localhost')
+  }()
+      .catch(function (err) {
+        console.error(err.message)
+      })
+})
