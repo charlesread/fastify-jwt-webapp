@@ -7,6 +7,7 @@ const URL = require('url').URL
 // npm modules
 const fp = require('fastify-plugin')
 const moment = require('moment')
+const urlPattern = require('url-pattern')
 
 // custom modules
 const configFactory = require(path.join(__dirname, 'lib', 'config.js'))
@@ -16,6 +17,19 @@ const implementation = async function (fastify, options) {
   const config = configFactory(options)
   const _config = config.get()
   const log = fastify.log.child({module: 'fastify-jwt-webapp'})
+
+  const urlPatterns = _config.pathExempt.map(function (pathPattern) {
+    return new urlPattern(pathPattern)
+  })
+
+  function pathMatches(_path) {
+    for (let i = 0; i < urlPatterns.length; i++) {
+      if (urlPatterns[i].match(_path)) {
+        return true
+      }
+    }
+    return false
+  }
 
   function getCookieOptionsForExpiration(_expirationDate) {
     return Object.assign({}, _config.cookie, {expires: new Date(_expirationDate)})
@@ -130,7 +144,7 @@ const implementation = async function (fastify, options) {
         req[_config.nameCredentialsDecorator] = verifiedToken
       } catch (err) {
         log.debug('token verification was not successful: %j', err.message)
-        if (!_config.pathExempt.includes(originalUrl)) {
+        if (!pathMatches(originalUrl)) {
           log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
           return reply
             .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
@@ -141,7 +155,7 @@ const implementation = async function (fastify, options) {
       }
     } else {
       log.debug('a token does not exist')
-      if (!_config.pathExempt.includes(originalUrl)) {
+      if (!pathMatches(originalUrl)) {
         log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
         return reply
           .setCookie('originalPath', originalPath, _cookieOptions)
