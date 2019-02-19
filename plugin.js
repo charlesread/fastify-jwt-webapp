@@ -35,7 +35,7 @@ const implementation = async function (fastify, options) {
         return Object.assign({}, _config.cookie, {expires: new Date(_expirationDate)})
     }
 
-    const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
+    // const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
 
     // register cookie plugin so that we can persist the JWT from request to request
     fastify.register(require('fastify-cookie'))
@@ -52,7 +52,7 @@ const implementation = async function (fastify, options) {
     // endpoint for logging out
     fastify.get(_config.pathLogout, async function (req, reply) {
         log.debug('%s was invoked', _config.pathLogout)
-        // const _cookieOptions = getCookieOptionsForExpiration(moment().subtract(1, 'days'))
+        const _cookieOptions = getCookieOptionsForExpiration(moment().subtract(1, 'days'))
         log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, '', _cookieOptions)
         return reply
             .setCookie(_config.cookie.name, '', _cookieOptions)
@@ -110,6 +110,7 @@ const implementation = async function (fastify, options) {
                         log.debug(`pathSuccessRedirect WAS specified in options, so it takes precedence, redirecting to ${_config.pathSuccessRedirect}`)
                         determinedPathSuccessRedirect = _config.pathSuccessRedirect
                     }
+                    const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
                     return reply
                         .setCookie(_config.cookie.name, token, _cookieOptions)
                         .redirect(determinedPathSuccessRedirect)
@@ -169,6 +170,7 @@ const implementation = async function (fastify, options) {
             log.debug('a token does not exist')
             if (!pathMatches(originalUrl)) {
                 log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
+                const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
                 return reply
                     .setCookie('originalPath', originalPath, _cookieOptions)
                     .redirect(_config.pathLogin)
