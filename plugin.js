@@ -22,7 +22,7 @@ const implementation = async function (fastify, options) {
         return new urlPattern(pathPattern)
     })
 
-    function pathMatches(_path) {
+    function pathExempt(_path) {
         for (let i = 0; i < urlPatterns.length; i++) {
             if (urlPatterns[i].match(_path)) {
                 return true
@@ -32,6 +32,7 @@ const implementation = async function (fastify, options) {
     }
 
     function getCookieOptionsForExpiration(_expirationDate) {
+        log.debug(`_expirationDate passed getCookieOptionsForExpiration to: ${_expirationDate}`)
         return Object.assign({}, _config.cookie, {expires: new Date(_expirationDate)})
     }
 
@@ -52,7 +53,8 @@ const implementation = async function (fastify, options) {
     // endpoint for logging out
     fastify.get(_config.pathLogout, async function (req, reply) {
         log.debug('%s was invoked', _config.pathLogout)
-        const _cookieOptions = getCookieOptionsForExpiration(moment().subtract(1, 'days'))
+        const _cookieOptions = Object.assign({}, _config.cookie, {expires: new Date(moment().subtract(1, 'days'))})
+        delete _cookieOptions.maxAge
         log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, '', _cookieOptions)
         return reply
             .setCookie(_config.cookie.name, '', _cookieOptions)
@@ -62,6 +64,7 @@ const implementation = async function (fastify, options) {
     // callback endpoint that will be redirected to once successfully authenticated with the authentication provider
     // this endpoint will convert the authorization code to a JWT and set a cookie with the JWT
     fastify.get(_config.pathCallback, async function (req, reply) {
+        log.debug(`fastify-jwt-webapp callback handler for "${_config.pathCallback}" invoked`)
         try {
             const queryError = req.query.error
             if (queryError) {
@@ -69,7 +72,6 @@ const implementation = async function (fastify, options) {
                 return reply
                     .redirect(_config.pathLogin)
             }
-            log.debug(`fastify-jwt-webapp callback endpoint ${_config.pathCallback} requested`)
             let token
             if (_config.mode === 'id_token') {
                 log.debug('id_token mode detected')
@@ -82,9 +84,8 @@ const implementation = async function (fastify, options) {
                 // pull out the actual JWT from the response
                 token = jwtResponse[_config.nameTokenAttribute]
             }
-            log.debug(`token attained: ${token}`)
             if (token) {
-                log.debug('the token exists')
+                log.debug(`token attained: ${token}`)
                 let decodedToken
                 try {
                     log.debug(`attempting to verify the token`)
@@ -99,21 +100,11 @@ const implementation = async function (fastify, options) {
                             log.warn(err.message)
                         }
                     }
-                    log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, token, _cookieOptions)
-                    const cookieOriginalPath = req.cookies['originalPath']
-                    log.debug(`cookieOriginalPath: ${cookieOriginalPath}`)
-                    let determinedPathSuccessRedirect
-                    if (!options.pathSuccessRedirect && cookieOriginalPath) {
-                        log.debug(`pathSuccessRedirect was NOT specified in options, redirecting to the path that was originally requested: ${cookieOriginalPath}`)
-                        determinedPathSuccessRedirect = cookieOriginalPath
-                    } else {
-                        log.debug(`pathSuccessRedirect WAS specified in options, so it takes precedence, redirecting to ${_config.pathSuccessRedirect}`)
-                        determinedPathSuccessRedirect = _config.pathSuccessRedirect
-                    }
-                    const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
+
+                    log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, token, _config.cookie)
                     return reply
-                        .setCookie(_config.cookie.name, token, _cookieOptions)
-                        .redirect(determinedPathSuccessRedirect)
+                        .setCookie(_config.cookie.name, token, _config.cookie)
+                        .redirect(_config.pathSuccessRedirect)
                 } catch (err) {
                     log.warn('the token was not successfully verified, no cookie will be set, redirecting to %s: %s', _config.pathLogin, err.message)
                     return reply
@@ -134,49 +125,64 @@ const implementation = async function (fastify, options) {
     fastify.decorateRequest(_config.nameCredentialsDecorator, undefined)
 
     fastify.addHook('preHandler', async function (req, reply) {
-        const queryError = req.query.error
+
         log.debug('fastify-jwt-webapp preHandler hook invoked')
+
+        const queryError = req.query.error
         if (queryError) {
             log.error(`problem with provider: ${queryError}`)
             return reply
                 .redirect(_config.pathLogin)
         }
-        const originalUrlObject = new URL(`http://dummy.com${req.raw.originalUrl}`)
-        const originalUrl = originalUrlObject.pathname
-        const originalPath = `${originalUrlObject.pathname}${originalUrlObject.search}`
-        log.debug('originalPath: %s', originalPath)
+
+        const requestedUrlObject = new URL(`http://dummy.com${req.raw.originalUrl}`)
+        const requestedPathname = requestedUrlObject.pathname
+        const requestedPath = `${requestedUrlObject.pathname}${requestedUrlObject.search}`
+        log.debug('requestedPath: %s', requestedPath)
+
         const token = req.cookies[_config.cookie.name]
         if (token) {
-            log.debug(`a token exists in the '${_config.cookie.name}' cookie: ${token}`)
+            // if a token exists first determine if it's valid, if it is just let them through to the requested endpoint
+            log.debug(`a token exists in the "${_config.cookie.name}" cookie: ${token}`)
             try {
                 let verifiedToken = await config.verifyJWT(token)
                 log.debug('token verification was successful, verified token: %j', verifiedToken)
+                // transform the token if the user has specified a transformation fuction
                 if (_config.credentialTransformation) {
                     verifiedToken = await _config.credentialTransformation(verifiedToken)
                 }
+                // decorate the request with the credentials from token
                 req[_config.nameCredentialsDecorator] = verifiedToken
+                // token has been verified, no other work is necessary, let user through to requested endpoint
             } catch (err) {
                 log.debug('token verification was not successful: %j', err.message)
-                if (!pathMatches(originalUrl)) {
-                    log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
-                    return reply
-                        .setCookie(_config.cookie.name, undefined, Object.assign({}, _config.cookie, {expires: ((Date.now()) - 1000)}))
-                        .redirect(_config.pathLogin)
+                if (pathExempt(requestedPathname)) {
+                    // a token exists in the cookie, but it isn't valid, and the path is exempt anyway
+                    // so let them through to the requested endpoint
+                    log.debug(`the token isn't valid, but the path is exempt, letting through...`)
                 } else {
-                    log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
+                    log.debug(`the token isn't valid, the path is not exempt, killing cookie and redirecting to "${_config.pathLogin}"...`)
+                    // kill the cookie, it's not valid
+                    const _cookieOptions = Object.assign({}, _config.cookie, {expires: new Date(moment().subtract(1, 'days'))})
+                    delete _cookieOptions.maxAge
+                    return reply
+                        .setCookie(_config.cookie.name, undefined, _cookieOptions)
+                        .redirect(_config.pathLogin)
                 }
             }
         } else {
+            // a token wasn't found in the cookie
             log.debug('a token does not exist')
-            if (!pathMatches(originalUrl)) {
-                log.debug(`pathExempt does NOT include ${originalUrl}, redirecting to ${_config.urlAuthorize}`)
-                const _cookieOptions = getCookieOptionsForExpiration(moment().add(1, 'days'))
-                return reply
-                    .setCookie('originalPath', originalPath, _cookieOptions)
-                    .redirect(_config.pathLogin)
+            if (!pathExempt(requestedPathname)) {
+                // the path is not exempt, so redirect to login endpoint
+                log.debug(`pathExempt does NOT include ${requestedPathname}, redirecting to "${_config.pathLogin}"`)
+                return reply.redirect(_config.pathLogin)
+            } else {
+                // the path is exempt, so let them through
+                log.debug(`pathExempt DOES include ${requestedPathname}, letting through`)
             }
-            log.debug(`pathExempt DOES include ${originalUrl}, letting through`)
         }
+
     })
 
 }
