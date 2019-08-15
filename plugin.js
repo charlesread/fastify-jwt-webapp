@@ -188,5 +188,5 @@ const implementation = async function (fastify, options) {
 }
 
 module.exports = fp(implementation, {
-    fastify: '>1.x'
+    fastify: '>=1.x'
 })
