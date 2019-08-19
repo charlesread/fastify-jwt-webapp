@@ -140,3 +140,4 @@ Fetching the JWKS is by far the most taxing part of this whole process; often ma
 | `nameCredentialsDecorator` |  | `credentials` | After successful authentication, the fastify request object will be decorated with the payload of the JWT, you can control that decorator here, `req.theLoggedInUsersInfo` for example. |
 | `authorizationCallback` |  |  | `authorizationCallback` is a totally optional function with signature `async function(jwtResponse, request, reply)` that is called after successful authentication, it has absolutely no effect on the plugin's actual functionality. |
 | `cacheJWKSAge` | _(disabled)_ |  | Will cache the JWKS for `cacheJWKSAge` milliseconds after the first request that needs it.|
+| `redirectOnFail` |  | `false` | If set to `true` the plugin will redirect to `pathLogin` if a JWT is present, but not valid. |
