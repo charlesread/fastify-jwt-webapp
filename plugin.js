@@ -157,27 +157,17 @@ const implementation = async function (fastify, options) {
       } catch (err) {
         log.debug('token verification was not successful: %j', err.message)
         if (!pathExempt(requestedPathname) || _config.redirectOnFail) {
-          log.debug(`the token isn't valid, the path is not exempt, killing cookie and redirecting to "${_config.pathLogin}"...`)
-          log.debug(`redirectOnFail is true, redirecting to "${_config.pathLogin}"...`)
+          log.debug(`the token isn't valid - redirectOnFail is true, or the path is not exempt, redirecting to "${_config.pathLogin}"...`)
           // kill the cookie, it's not valid
           const _cookieOptions = Object.assign({}, _config.cookie, {expires: new Date(moment().subtract(1, 'days'))})
           delete _cookieOptions.maxAge
           return reply
             .setCookie(_config.cookie.name, undefined, _cookieOptions)
             .redirect(_config.pathLogin)
-        }
-        if (pathExempt(requestedPathname) || _config.redirectOnFail) {
+        } else if (pathExempt(requestedPathname)) {
           // a token exists in the cookie, but it isn't valid, and the path is exempt anyway
           // so let them through to the requested endpoint
           log.debug(`the token isn't valid, but the path is exempt, letting through...`)
-        } else {
-          // log.debug(`the token isn't valid, the path is not exempt, killing cookie and redirecting to "${_config.pathLogin}"...`)
-          // // kill the cookie, it's not valid
-          // const _cookieOptions = Object.assign({}, _config.cookie, {expires: new Date(moment().subtract(1, 'days'))})
-          // delete _cookieOptions.maxAge
-          // return reply
-          //   .setCookie(_config.cookie.name, undefined, _cookieOptions)
-          //   .redirect(_config.pathLogin)
         }
       }
     } else {
