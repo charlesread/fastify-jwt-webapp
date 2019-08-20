@@ -22,14 +22,14 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "ajv": "^6.9.1",
-    "better-ajv-errors": "^0.6.1",
+    "ajv": "^6.10.2",
+    "better-ajv-errors": "^0.6.4",
     "deep-extend": "^0.6.0",
-    "fastify": "^1.14.1",
-    "fastify-cookie": "^2.1.7",
-    "fastify-plugin": "^1.5.0",
-    "jsonwebtoken": "^8.4.0",
-    "jwks-rsa": "^1.4.0",
+    "fastify": "^2.7.1",
+    "fastify-cookie": "^3.1.0",
+    "fastify-plugin": "^1.6.0",
+    "jsonwebtoken": "^8.5.1",
+    "jwks-rsa": "^1.6.0",
     "moment": "^2.24.0",
     "request": "^2.88.0",
     "url-pattern": "^1.0.3"
@@ -37,10 +37,10 @@
   "devDependencies": {
     "fastify-tls-keygen": "^1.1.0",
     "nock": "^10.0.6",
-    "pem": "^1.14.1",
+    "pem": "^1.14.2",
     "pem-jwk": "^2.0.0",
-    "pino-pretty": "^2.5.0",
-    "request-promise": "^4.2.2",
-    "tap": "^12.5.2"
+    "pino-pretty": "^3.2.1",
+    "request-promise": "^4.2.4",
+    "tap": "^14.6.1"
   }
 }
