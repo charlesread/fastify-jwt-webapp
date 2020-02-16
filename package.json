@@ -22,25 +22,25 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "ajv": "^6.10.2",
-    "better-ajv-errors": "^0.6.4",
+    "ajv": "^6.11.0",
+    "better-ajv-errors": "^0.6.7",
     "deep-extend": "^0.6.0",
-    "fastify": "^2.7.1",
-    "fastify-cookie": "^3.1.0",
+    "fastify": "^2.12.0",
+    "fastify-cookie": "^3.6.0",
     "fastify-plugin": "^1.6.0",
     "jsonwebtoken": "^8.5.1",
-    "jwks-rsa": "^1.6.0",
+    "jwks-rsa": "^1.6.2",
     "moment": "^2.24.0",
-    "request": "^2.88.0",
+    "request": "^2.88.2",
     "url-pattern": "^1.0.3"
   },
   "devDependencies": {
     "fastify-tls-keygen": "^1.1.0",
-    "nock": "^10.0.6",
-    "pem": "^1.14.2",
+    "nock": "^11.8.2",
+    "pem": "^1.14.4",
     "pem-jwk": "^2.0.0",
-    "pino-pretty": "^3.2.1",
-    "request-promise": "^4.2.4",
-    "tap": "^14.6.1"
+    "pino-pretty": "^3.6.0",
+    "request-promise": "^4.2.5",
+    "tap": "^14.10.6"
   }
 }

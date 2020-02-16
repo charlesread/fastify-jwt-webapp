@@ -107,6 +107,7 @@ const implementation = async function (fastify, options) {
             .redirect(_config.pathSuccessRedirect)
         } catch (err) {
           log.warn('the token was not successfully verified, no cookie will be set, redirecting to %s: %s', _config.pathLogin, err.message)
+          log.debug(err.stack)
           return reply
             .redirect(_config.pathLogin)
         }
@@ -176,7 +177,8 @@ const implementation = async function (fastify, options) {
       if (!pathExempt(requestedPathname)) {
         // the path is not exempt, so redirect to login endpoint
         log.debug(`pathExempt does NOT include ${requestedPathname}, redirecting to "${_config.pathLogin}"`)
-        return reply.redirect(_config.pathLogin)
+        return reply
+          .redirect(_config.pathLogin)
       } else {
         // the path is exempt, so let them through
         log.debug(`pathExempt DOES include ${requestedPathname}, letting through`)
