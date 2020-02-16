@@ -104,7 +104,7 @@ const implementation = async function (fastify, options) {
           log.debug('setting cookie "%s" to a value of "%s", with these attributes: %o', _config.cookie.name, token, _config.cookie)
           return reply
             .setCookie(_config.cookie.name, token, _config.cookie)
-            .redirect(_config.pathSuccessRedirect)
+            .redirect(req.cookies.requestedPath || _config.pathSuccessRedirect)
         } catch (err) {
           log.warn('the token was not successfully verified, no cookie will be set, redirecting to %s: %s', _config.pathLogin, err.message)
           log.debug(err.stack)
@@ -162,6 +162,9 @@ const implementation = async function (fastify, options) {
           // kill the cookie, it's not valid
           const _cookieOptions = Object.assign({}, _config.cookie, {expires: new Date(moment().subtract(1, 'days'))})
           delete _cookieOptions.maxAge
+          if (_config.eligibleRequestedPath(requestedPath)) {
+            reply.setCookie('requestedPath', requestedPath, _config.cookie)
+          }
           return reply
             .setCookie(_config.cookie.name, undefined, _cookieOptions)
             .redirect(_config.pathLogin)
@@ -177,6 +180,9 @@ const implementation = async function (fastify, options) {
       if (!pathExempt(requestedPathname)) {
         // the path is not exempt, so redirect to login endpoint
         log.debug(`pathExempt does NOT include ${requestedPathname}, redirecting to "${_config.pathLogin}"`)
+        if (_config.eligibleRequestedPath(requestedPath)) {
+          reply.setCookie('requestedPath', requestedPath, _config.cookie)
+        }
         return reply
           .redirect(_config.pathLogin)
       } else {
