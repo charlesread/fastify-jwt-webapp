@@ -136,7 +136,7 @@ const implementation = async function (fastify, options) {
         .redirect(_config.pathLogin)
     }
 
-    const requestedUrlObject = new URL(`http://dummy.com${req.raw.originalUrl}`)
+    const requestedUrlObject = new URL(`http://dummy.com${req.raw.url || req.raw.originalUrl}`)
     const requestedPathname = requestedUrlObject.pathname
     const requestedPath = `${requestedUrlObject.pathname}${requestedUrlObject.search}`
     log.debug('requestedPath: %s', requestedPath)
