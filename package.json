@@ -28,7 +28,7 @@
     "fastify": "^3.3.0",
     "fastify-cookie": "^4.0.2",
     "fastify-plugin": "^2.3.2",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "jwks-rsa": "^1.9.0",
     "moment": "^2.27.0",
     "request": "^2.88.2",
